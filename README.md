@@ -1,4 +1,4 @@
-# Heathen Lexicon Localisation Gem
+# Lexicon Localisation Gem
 ![License](https://img.shields.io/badge/License-Apache_2.0-blue?style=flat-square)
 ![Maintained](https://img.shields.io/badge/Maintained%3F-yes-green?style=flat-square)
 ![O3DE](https://img.shields.io/badge/O3DE-25.10%20%2B-%2300AEEF?style=flat-square&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0id2hpdGUiIGQ9Ik0xMiAxTDEgNy40djkuMkwxMiAyM2wxMS02LjRWNy40TDEyIDF6bTkuMSAxNC45TDExLjUgMjEuM2wtOC42LTYuNFY4LjFsOC42LTYuNCA5LjEgNi40djYuOHpNMTEuNSA0LjZMMi45IDkuNnY0LjhsOC42IDUuMSA4LjYtNS4xVjkuNmwtOC42LTUuMHoiLz48L3N2Zz4=)
@@ -9,6 +9,13 @@ An [Open 3D Engine (O3DE)](https://o3de.org) gem providing a deterministic, asse
 - **Origin:** Heathen Group
 - **Platforms:** Windows, Linux, Android, iOS
 
+---
+
+## Requirements
+
+- O3DE engine **25.10.2** or compatible
+- [xxHash](https://github.com/heathen-engineering/O3DE-xxHash) Gem (provides `xxHash::xxHashFunctions`)
+  
 ---
 
 ## Become a GitHub Sponsor
@@ -224,10 +231,3 @@ A localisation-aware generic asset reference (texture, prefab, font, etc.). Same
 - **Active culture** — loaded via `LoadCulture("en-GB")`. Checked first on every lookup.
 - **Default culture** — set via `SetDefaultCulture("en-US")`. Checked when the active lexicon has no entry for a key.
 - On a total miss (neither lexicon has the key) `ResolveString` returns an empty string; `ResolveAssetId` returns a null `AZ::Uuid`.
-
----
-
-## Requirements
-
-- O3DE engine **25.10.2** or compatible
-- `xxHash` gem (included in this project; provides `xxHash::xxHashFunctions`)
