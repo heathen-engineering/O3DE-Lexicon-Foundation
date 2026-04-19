@@ -1,4 +1,4 @@
-# Foundation for Localisation (HeLex)
+# Heathen Lexicon Localisation Gem
 
 An [Open 3D Engine (O3DE)](https://o3de.org) gem providing a deterministic, asset-driven localisation system. Decouples logical dot-path addresses from runtime values using xxHash — supporting strings, sound assets, and any other asset type, not just text.
 
