@@ -25,9 +25,9 @@
 namespace FoundationLocalisation
 {
     ///<summary>
-    /// Converts .helex source files into binary LexiconAssemblyAsset (.hbin) products.
+    /// Converts .helex source files into binary LexiconAssemblyAsset (.lexicon) products.
     ///
-    /// Each .helex file is processed into exactly one .hbin per enabled platform.
+    /// Each .helex file is processed into exactly one .lexicon per enabled platform.
     /// The builder:
     ///   - Hashes every dot-path key with XXH3_64bits (seed 0)
     ///   - Appends string values as UTF-8 null-terminated bytes into a blob

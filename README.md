@@ -25,9 +25,9 @@ Each language/culture is stored as a **HeLex** file pair:
 | Extension | Role | Contents |
 |-----------|------|----------|
 | `.helex` | Source | Human-readable JSON; edited by developers and localisation teams |
-| `.hbin` | Product | Binary `HeathenLexiconAsset`; produced by the Asset Processor |
+| `.lexicon` | Product | Binary `LexiconAssemblyAsset`; produced by the Asset Processor |
 
-At runtime the system component holds the active and default `HeathenLexiconAsset`. Lookups are O(log n) binary search on a sorted hash index. The hash algorithm is **XXH3\_64bits** (seed 0) — the same algorithm used across the Heathen gem suite.
+At runtime the system component holds the active and default `LexiconAssemblyAsset`. Lookups are O(log n) binary search on a sorted hash index. The hash algorithm is **XXH3\_64bits** (seed 0) — the same algorithm used across the Heathen gem suite.
 
 A single `.helex` file can service **multiple culture codes** (e.g. `"pt-BR"` and `"es-419"`). There is no enforced folder structure; place `.helex` files anywhere in the project source tree.
 
@@ -54,13 +54,13 @@ An array of [BCP 47](https://www.rfc-editor.org/rfc/rfc5646) culture codes this 
 "cultures": ["en-GB", "en-IE"]
 ```
 
-A lexicon is selected at runtime by calling `LoadCulture("en-GB")`. The system scans all registered `.hbin` assets and loads the first one whose `cultures` list contains the requested code.
+A lexicon is selected at runtime by calling `LoadCulture("en-GB")`. The system scans all registered `.lexicon` assets and loads the first one whose `cultures` list contains the requested code.
 
 ### `entries`
 
 A flat object mapping dot-path keys to values. Keys may use any depth of dot-notation.
 
-#### String value (HeathenText)
+#### String value (LexiconText)
 
 A plain JSON string becomes a localised text entry.
 
@@ -70,7 +70,7 @@ A plain JSON string becomes a localised text entry.
 "HUD.Health.Label":  "Health"
 ```
 
-#### Asset reference value (HeathenAsset / HeathenSound)
+#### Asset reference value (LexiconAsset / LexiconSound)
 
 A JSON object with a single `"uuid"` field becomes an asset ID entry. The value is a standard O3DE asset UUID in `{XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX}` format. The Asset Processor will declare this UUID as a **product dependency**, preventing it from being stripped in packaged builds.
 
@@ -160,16 +160,16 @@ if (auto* loc = FoundationLocalisation::FoundationLocalisationInterface::Get())
 
 Use these types as fields on your components to make individual values localisation-aware.
 
-### `Heathen::HeathenText`
+### `Heathen::LexiconText`
 
-A localisation-aware string. Include `<FoundationLocalisation/HeathenText.h>`.
+A localisation-aware string. Include `<FoundationLocalisation/LexiconText.h>`.
 
 ```cpp
-#include <FoundationLocalisation/HeathenText.h>
+#include <FoundationLocalisation/LexiconText.h>
 
 class MyComponent : public AZ::Component
 {
-    Heathen::HeathenText m_buttonLabel; // serialises into the Inspector
+    Heathen::LexiconText m_buttonLabel; // serialises into the Inspector
 };
 ```
 
@@ -197,12 +197,12 @@ else
     value = m_buttonLabel.m_keyOrValue;
 ```
 
-### `Heathen::HeathenSound`
+### `Heathen::LexiconSound`
 
-A localisation-aware sound asset reference. Localised mode resolves to an `AZ::Uuid` (asset ID). Include `<FoundationLocalisation/HeathenSound.h>`.
+A localisation-aware sound asset reference. Localised mode resolves to an `AZ::Uuid` (asset ID). Include `<FoundationLocalisation/LexiconSound.h>`.
 
 ```cpp
-Heathen::HeathenSound m_backgroundMusic;
+Heathen::LexiconSound m_backgroundMusic;
 
 // Resolve
 AZ::Uuid soundId = m_backgroundMusic.IsLocalised()
@@ -210,9 +210,9 @@ AZ::Uuid soundId = m_backgroundMusic.IsLocalised()
     : m_backgroundMusic.m_literalAssetId;
 ```
 
-### `Heathen::HeathenAsset`
+### `Heathen::LexiconAsset`
 
-A localisation-aware generic asset reference (texture, prefab, font, etc.). Same interface as `HeathenSound`. Include `<FoundationLocalisation/HeathenAsset.h>`.
+A localisation-aware generic asset reference (texture, prefab, font, etc.). Same interface as `LexiconSound`. Include `<FoundationLocalisation/LexiconAsset.h>`.
 
 ---
 

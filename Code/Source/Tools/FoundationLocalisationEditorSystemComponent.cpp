@@ -90,9 +90,9 @@ namespace FoundationLocalisation
         LexiconEditorRequestBus::Handler::BusConnect();
         AzFramework::AssetCatalogEventBus::Handler::BusConnect();
 
-        // Register asset type handler so the AssetManager can load .hbin files
+        // Register asset type handler so the AssetManager can load .lexicon files
         m_assetHandler = aznew AzFramework::GenericAssetHandler<Heathen::LexiconAssemblyAsset>(
-            "Lexicon Assembly", "Lexicon Localisation", "hbin");
+            "Lexicon Assembly", "Lexicon Localisation", "lexicon");
         m_assetHandler->Register();
 
         // Register the asset builder so the Asset Processor watches .helex files

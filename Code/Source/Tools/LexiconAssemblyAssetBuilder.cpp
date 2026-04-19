@@ -182,7 +182,7 @@ namespace FoundationLocalisation
         // entries object
         AssetBuilderSDK::JobProduct product;
         product.m_productSubID = 0;
-        product.m_productFileName = AZ::IO::Path(request.m_fullPath).Stem().String() + ".hbin";
+        product.m_productFileName = AZ::IO::Path(request.m_fullPath).Stem().String() + ".lexicon";
 
         if (doc.HasMember("entries") && doc["entries"].IsObject())
         {
@@ -272,7 +272,7 @@ namespace FoundationLocalisation
             });
 
         // ----------------------------------------------------------------
-        // 5. Serialise to .hbin
+        // 5. Serialise to .lexicon
         // ----------------------------------------------------------------
         AZ::IO::Path outputPath(request.m_tempDirPath);
         outputPath /= product.m_productFileName;

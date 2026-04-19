@@ -191,7 +191,7 @@ namespace FoundationLocalisation
         m_previewBtn->setText("\u25CE Preview");
         m_previewBtn->setToolTip(
             "Hot-swap the active culture in the editor viewport to match the Working lexicon.\n"
-            "Requires the Asset Processor to have built the .hbin product.\n"
+            "Requires the Asset Processor to have built the .lexicon product.\n"
             "Restores the previous culture when toggled off.");
         m_previewBtn->setCheckable(true);
         m_previewBtn->setChecked(false);
@@ -1026,8 +1026,8 @@ namespace FoundationLocalisation
                 return;
             }
 
-            // Check the .hbin product is in the asset catalog.
-            // Derive the relative product path: source relative path with .hbin extension.
+            // Check the .lexicon product is in the asset catalog.
+            // Derive the relative product path: source relative path with .lexicon extension.
             bool hbinReady = false;
             {
                 AZStd::string srcRoot;
@@ -1041,7 +1041,7 @@ namespace FoundationLocalisation
                     if (relPath.endsWith(QLatin1String(".helex"), Qt::CaseInsensitive))
                     {
                         relPath.chop(6); // remove ".helex"
-                        relPath += QLatin1String(".hbin");
+                        relPath += QLatin1String(".lexicon");
                     }
                     // Asset catalog paths use lowercase forward slashes.
                     const QByteArray catalogPath =
@@ -1063,8 +1063,8 @@ namespace FoundationLocalisation
                 const auto answer = QMessageBox::question(
                     this,
                     "Live Preview — Asset Not Ready",
-                    "The .hbin product for this lexicon has not been processed yet.\n\n"
-                    "Run the Asset Processor to build the .hbin first.\n\n"
+                    "The .lexicon product for this lexicon has not been processed yet.\n\n"
+                    "Run the Asset Processor to build the .lexicon first.\n\n"
                     "Enable preview anyway? (resolution calls will return empty until "
                     "the asset is loaded.)",
                     QMessageBox::Yes | QMessageBox::Cancel,
