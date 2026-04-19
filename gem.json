@@ -1,0 +1,31 @@
+{
+    "gem_name": "FoundationLocalisation",
+    "version": "1.0.0",
+    "display_name": "Lexicon Localisation Foundation",
+    "license": "Apache 2.0",
+    "license_url": "",
+    "origin": "Heathen Group",
+    "origin_url": "https://heathen.group",
+    "type": "Code",
+    "summary": "A robust localisation system that supports localising strings, audio or any other asset type",
+    "canonical_tags": [
+        "Gem"
+    ],
+    "user_tags": [
+        "FoundationLocalisation"
+    ],
+    "platforms": [
+        "Windows","Linux","iOS","Android"
+    ],
+    "icon_path": "",
+    "requirements": "",
+    "documentation_url": "",
+    "dependencies": [
+        "xxHash"
+    ],
+    "repo_uri": "https://github.com/heathen-engineering/O3DE-Foundaiton-for-Localisation",
+    "compatible_engines": [
+    ],
+    "engine_api_dependencies":[
+    ]
+}

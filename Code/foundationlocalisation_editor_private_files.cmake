@@ -1,0 +1,37 @@
+
+set(FILES
+    Source/Tools/FoundationLocalisationEditorSystemComponent.cpp
+    Source/Tools/FoundationLocalisationEditorSystemComponent.h
+    Source/Tools/FoundationLocalisation.qrc
+    Source/Tools/LexiconAssemblyAssetBuilder.h
+    Source/Tools/LexiconAssemblyAssetBuilder.cpp
+    Source/Tools/LexiconEditorRequestBus.h
+    Source/Tools/LexiconPropertyWidget.h
+    Source/Tools/LexiconPropertyWidget.cpp
+    Source/Tools/LexiconPropertyHandler.h
+    Source/Tools/LexiconPropertyHandler.cpp
+    Source/Tools/LexiconKeyPickerDialog.h
+    Source/Tools/LexiconKeyPickerDialog.cpp
+    Source/Tools/LexiconCsvInterop.h
+    Source/Tools/LexiconCsvInterop.cpp
+    Source/Tools/LexiconGathererWorker.h
+    Source/Tools/LexiconGathererWorker.cpp
+    Source/Tools/LexiconGathererInboxWidget.h
+    Source/Tools/LexiconGathererInboxWidget.cpp
+    Source/Tools/LexiconToolWindow.h
+    Source/Tools/LexiconToolWindow.cpp
+    Source/Tools/LexiconEntryMap.h
+    Source/Tools/LexiconTreeItem.h
+    Source/Tools/LexiconTreeModel.h
+    Source/Tools/LexiconTreeModel.cpp
+    Source/Tools/LexiconTableModel.h
+    Source/Tools/LexiconTableModel.cpp
+    Source/Tools/LexiconValueDelegate.h
+    Source/Tools/LexiconValueDelegate.cpp
+    Source/Tools/LexiconNewFileDialog.h
+    Source/Tools/LexiconNewFileDialog.cpp
+    Source/Tools/LexiconInspectorWidget.h
+    Source/Tools/LexiconInspectorWidget.cpp
+    Source/Tools/LexiconValidator.h
+    Source/Tools/LexiconValidator.cpp
+)
