@@ -16,6 +16,7 @@
  */
 
 #include <FoundationLocalisation/LexiconAssemblyAsset.h>
+#include <FoundationLocalisation/LexiconHintType.h>
 #include <AzCore/Serialization/SerializeContext.h>
 
 #include <cstring>
@@ -80,6 +81,28 @@ namespace Heathen
         AZ::Uuid result;
         memcpy(&result, m_bufferBlob.data() + e->m_dataOffset, sizeof(AZ::Uuid));
         return result;
+    }
+
+    FoundationLocalisation::LexiconHintType LexiconAssemblyAsset::Entry::GetHintType() const
+    {
+        switch (m_dataSize & TypeFlagMask)
+        {
+        case TypeString:    return FoundationLocalisation::LexiconHintType::String;
+        case TypeSound:     return FoundationLocalisation::LexiconHintType::Sound;
+        case TypeTexture:   return FoundationLocalisation::LexiconHintType::Texture;
+        case TypeSpawnable: return FoundationLocalisation::LexiconHintType::Spawnable;
+        default:            return FoundationLocalisation::LexiconHintType::Asset;
+        }
+    }
+
+    FoundationLocalisation::LexiconHintType LexiconAssemblyAsset::FindHintType(AZ::u64 key) const
+    {
+        const Entry* e = BinarySearch(key);
+        if (!e)
+        {
+            return FoundationLocalisation::LexiconHintType::None;
+        }
+        return e->GetHintType();
     }
 
     const LexiconAssemblyAsset::Entry* LexiconAssemblyAsset::BinarySearch(AZ::u64 key) const

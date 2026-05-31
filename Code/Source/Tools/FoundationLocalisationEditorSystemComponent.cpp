@@ -16,8 +16,12 @@
  */
 
 #include "FoundationLocalisationEditorSystemComponent.h"
+#include "LexiconSettingsPage.h"
 #include "LexiconToolWindow.h"
 #include "LexiconPropertyHandler.h"
+
+#include <AzCore/Interface/Interface.h>
+#include <EditorExtensions/ISettingsPageRegistry.h>
 
 #include <FoundationLocalisation/FoundationLocalisationTypeIds.h>
 #include <FoundationLocalisation/LexiconAssemblyAsset.h>
@@ -75,6 +79,7 @@ namespace FoundationLocalisation
     void FoundationLocalisationEditorSystemComponent::GetRequiredServices([[maybe_unused]] AZ::ComponentDescriptor::DependencyArrayType& required)
     {
         BaseSystemComponent::GetRequiredServices(required);
+        required.push_back(AZ_CRC_CE("EditorExtensionsService"));
     }
 
     void FoundationLocalisationEditorSystemComponent::GetDependentServices([[maybe_unused]] AZ::ComponentDescriptor::DependencyArrayType& dependent)
@@ -115,6 +120,9 @@ namespace FoundationLocalisation
 
         // Build the initial key tree from whatever .helex files exist on disk now
         ScanSourceFiles();
+
+        if (auto* reg = AZ::Interface<EditorExtensions::ISettingsPageRegistry>::Get())
+            reg->RegisterPage(AZStd::make_unique<LexiconSettingsPage>());
     }
 
     void FoundationLocalisationEditorSystemComponent::Deactivate()
@@ -253,6 +261,13 @@ namespace FoundationLocalisation
         ScanSourceFiles();
     }
 
+    LexiconHintType FoundationLocalisationEditorSystemComponent::GetHintForKey(
+        const AZStd::string& key) const
+    {
+        auto it = m_keyHints.find(key);
+        return it != m_keyHints.end() ? it->second : LexiconHintType::None;
+    }
+
     ////////////////////////////////////////////////////////////////////////
     // AzFramework::AssetCatalogEventBus
 
@@ -285,6 +300,7 @@ namespace FoundationLocalisation
     {
         m_knownKeys.clear();
         m_knownFilePaths.clear();
+        m_keyHints.clear();
 
         // Resolve the project source root
         AZ::IO::FixedMaxPath projectPath = AZ::Utils::GetProjectPath();
@@ -391,10 +407,43 @@ namespace FoundationLocalisation
 
         for (auto it = doc["entries"].MemberBegin(); it != doc["entries"].MemberEnd(); ++it)
         {
-            if (it->name.IsString())
+            if (!it->name.IsString())
+                continue;
+
+            AZStd::string key(it->name.GetString(), it->name.GetStringLength());
+            m_knownKeys.emplace_back(key);
+
+            // Determine hint type from value shape and optional "hint" field.
+            // Bare string  → String (no explicit hint needed for plain text entries).
+            // Object with "uuid" → Sound or Asset depending on "hint" field (default Asset).
+            // Object with "value" → String (explicit string-with-hint form).
+            LexiconHintType hint = LexiconHintType::None;
+
+            if (it->value.IsString())
             {
-                m_knownKeys.emplace_back(it->name.GetString(), it->name.GetStringLength());
+                hint = LexiconHintType::String;
             }
+            else if (it->value.IsObject())
+            {
+                const char* hintStr = nullptr;
+                if (it->value.HasMember("hint") && it->value["hint"].IsString())
+                    hintStr = it->value["hint"].GetString();
+
+                if (it->value.HasMember("uuid"))
+                {
+                    // Asset entry — distinguish sound vs generic asset via hint field.
+                    if (hintStr && strcmp(hintStr, "sound") == 0)
+                        hint = LexiconHintType::Sound;
+                    else
+                        hint = LexiconHintType::Asset;
+                }
+                else if (it->value.HasMember("value"))
+                {
+                    hint = LexiconHintType::String;
+                }
+            }
+
+            m_keyHints[key] = hint;
         }
     }
 

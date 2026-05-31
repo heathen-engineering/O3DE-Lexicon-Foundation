@@ -20,66 +20,70 @@
 #include "LexiconEntryMap.h"
 
 #include <QAbstractTableModel>
+#include <QMap>
 #include <QVector>
 
 namespace FoundationLocalisation
 {
     ///<summary>
-    /// QAbstractTableModel for the Workbench (translation grid).
+    /// QAbstractTableModel for the Lexicon Workbench.
     ///
-    /// Columns:
-    ///   0 — Status  (Unicode glyph: ✓ translated · ⚠ missing · ✗ orphan · ○ empty)
-    ///   1 — Key     (full dot-path; read-only)
-    ///   2 — Source  (value from reference culture; read-only)
-    ///   3 — Active  (value from editable culture; inline-editable)
+    /// Columns (matching Unity's Localisation Lexicon Project Settings):
+    ///   0 — Delete   (✕ — click to remove key from all files; handled via DeleteKeyRequested signal)
+    ///   1 — Key      (full dot-path; read-only)
+    ///   2 — Type     (LexiconHintType dropdown: String/Sound/Texture/Spawnable/Asset)
+    ///   3 — Default  (value in the designated default .helex; inline-editable)
+    ///   4+ — Extra   (one column per additional culture file; headers show assetId)
     ///
-    /// SetEntries() populates the model from the shared LexiconEntryMap, applying
-    /// an optional key-prefix filter so the table mirrors the Explorer tree selection.
-    ///
-    /// When the user commits an edit in the Active column, ActiveValueEdited() is
-    /// emitted. LexiconToolWindow handles the signal and writes the change back to
-    /// the active .helex file, then refreshes both models.
+    /// Empty Default cells are highlighted grey; empty Extra cells are highlighted amber.
     ///</summary>
     class LexiconTableModel : public QAbstractTableModel
     {
         Q_OBJECT
 
     public:
-        /// Column index constants — used by LexiconToolWindow when configuring the view.
-        enum Column { ColStatus = 0, ColKey, ColSource, ColActive, ColCount };
+        enum FixedColumn { ColKey = 0, ColType, ColDefault, FixedColCount };
+
+        // Extra culture file column descriptor
+        struct ExtraColumn
+        {
+            QString filePath;     ///< absolute path to the .helex file
+            QString displayName;  ///< assetId shown in the column header
+            QMap<QString, QString> values; ///< key → value in this file
+        };
 
         explicit LexiconTableModel(QObject* parent = nullptr);
 
-        ///<summary>
-        /// Rebuilds the visible row set from the given map.
-        ///
-        /// filterPrefix — show only keys that equal the prefix or start with
-        ///                "prefix.". Pass empty to show all entries.
-        /// hasSourceFile / hasActiveFile — used to determine whether an empty
-        ///                value indicates a missing translation or a file simply
-        ///                not being open yet.
-        ///</summary>
-        void SetEntries(const LexiconEntryMap& entries,
-                        const QString&          filterPrefix,
-                        bool                    hasSourceFile,
-                        bool                    hasActiveFile);
+        /// Populate or refresh the model.
+        void SetDefaultEntries(const LexiconEntryMap& entries,
+                               const QString&          filterPrefix = {});
+
+        /// Replace the list of extra culture columns. Pass an empty vector to clear.
+        void SetExtraColumns(const QVector<ExtraColumn>& extraCols);
+
+        /// When true, an extra "[+]" column appears at the far right of the header.
+        /// Clicking it (via QHeaderView::sectionClicked) should trigger ShowExtraColumnPicker().
+        /// Only set this when there are additional .helex files the user can add.
+        void SetShowAddColumn(bool show);
+        bool HasAddColumnButton() const { return m_showAddColumn; }
 
         // QAbstractTableModel
-        int           rowCount(const QModelIndex& parent = {})    const override;
+        int           rowCount   (const QModelIndex& parent = {}) const override;
         int           columnCount(const QModelIndex& parent = {}) const override;
-        QVariant      data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
-        QVariant      headerData(int section, Qt::Orientation orientation,
-                                 int role = Qt::DisplayRole) const override;
-        Qt::ItemFlags flags(const QModelIndex& index) const override;
-        bool          setData(const QModelIndex& index, const QVariant& value,
-                              int role = Qt::EditRole) override;
+        QVariant      data       (const QModelIndex& index, int role = Qt::DisplayRole) const override;
+        QVariant      headerData (int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
+        Qt::ItemFlags flags      (const QModelIndex& index) const override;
+        bool          setData    (const QModelIndex& index, const QVariant& value, int role = Qt::EditRole) override;
+
+        /// Hint type display strings and round-trip helpers (used by the Type delegate too)
+        static QString HintTypeLabel(LexiconHintType hint);
+        static QStringList HintTypeLabels();     ///< all labels in enum order, excluding None
+        static LexiconHintType HintTypeFromIndex(int idx); ///< 0-based excluding None
 
     signals:
-        ///<summary>
-        /// Fired when the user commits a change to the Active Value column.
-        /// LexiconToolWindow connects this to its file write-back slot.
-        ///</summary>
-        void ActiveValueEdited(const QString& key, const QString& newValue);
+        void TypeChanged(const QString& key, LexiconHintType newHint);
+        void DefaultValueEdited(const QString& key, const QString& newValue);
+        void ExtraValueEdited(const QString& key, int extraColIndex, const QString& newValue);
 
     private:
         struct Row
@@ -88,12 +92,9 @@ namespace FoundationLocalisation
             LexiconEntry entry;
         };
 
-        static QString StatusGlyph(const LexiconEntry& e, bool hasSource, bool hasActive);
-        static QColor  StatusColor(const LexiconEntry& e, bool hasSource, bool hasActive);
-
-        QVector<Row> m_rows;
-        bool m_hasSourceFile = false;
-        bool m_hasActiveFile = false;
+        QVector<Row>         m_rows;
+        QVector<ExtraColumn> m_extraCols;
+        bool                 m_showAddColumn = false;
     };
 
 } // namespace FoundationLocalisation

@@ -80,22 +80,62 @@ namespace FoundationLocalisation
                 this, &LexiconKeyPickerDialog::OnItemDoubleClicked);
 
         // ---- Populate from the editor key tree ----
-        // BroadcastResult requires the result variable type to match the function's
-        // return type. GetKnownKeys() returns by const-ref, so we receive a copy.
-        AZStd::vector<AZStd::string> keys;
-        LexiconEditorRequestBus::BroadcastResult(
-            keys, &LexiconEditorRequests::GetKnownKeys);
+        RefreshTree();
+    }
 
-        if (!keys.empty())
+    void LexiconKeyPickerDialog::SetHintFilter(LexiconHintType filter)
+    {
+        if (m_hintFilter == filter)
+            return;
+        m_hintFilter = filter;
+        RefreshTree();
+    }
+
+    void LexiconKeyPickerDialog::RefreshTree()
+    {
+        // Fetch all known keys from the editor bus
+        AZStd::vector<AZStd::string> allKeys;
+        LexiconEditorRequestBus::BroadcastResult(
+            allKeys, &LexiconEditorRequests::GetKnownKeys);
+
+        if (m_hintFilter == LexiconHintType::None)
         {
-            PopulateTree(keys);
+            // No filter — show everything
+            if (allKeys.empty())
+            {
+                m_tree->clear();
+                auto* placeholder = new QTreeWidgetItem(m_tree,
+                    QStringList("(no .helex keys found)"));
+                placeholder->setFlags(Qt::NoItemFlags);
+            }
+            else
+            {
+                PopulateTree(allKeys);
+            }
+            return;
+        }
+
+        // Filter to keys whose hint matches m_hintFilter
+        AZStd::vector<AZStd::string> filtered;
+        for (const AZStd::string& key : allKeys)
+        {
+            LexiconHintType keyHint = LexiconHintType::None;
+            LexiconEditorRequestBus::BroadcastResult(
+                keyHint, &LexiconEditorRequests::GetHintForKey, key);
+            if (keyHint == m_hintFilter)
+                filtered.emplace_back(key);
+        }
+
+        if (filtered.empty())
+        {
+            m_tree->clear();
+            auto* placeholder = new QTreeWidgetItem(m_tree,
+                QStringList("(no matching keys found)"));
+            placeholder->setFlags(Qt::NoItemFlags);
         }
         else
         {
-            // No keys yet — show a placeholder so the dialog is still usable
-            auto* placeholder = new QTreeWidgetItem(m_tree,
-                QStringList("(no .helex keys found)"));
-            placeholder->setFlags(Qt::NoItemFlags);
+            PopulateTree(filtered);
         }
     }
 

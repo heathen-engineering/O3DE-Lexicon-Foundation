@@ -1,0 +1,185 @@
+#pragma once
+
+#include <cstddef>
+#include <string_view>
+
+namespace FoundationLocalisation
+{
+    /// BCP-47 culture code table used by the Lexicon culture picker.
+    /// Covers base language codes and common regional variants.
+    /// Matches the KnownCultures table in the Unity Lexicon Foundation.
+    struct KnownCulture
+    {
+        std::string_view code;
+        std::string_view name;
+    };
+
+    inline constexpr KnownCulture KnownCulturesTable[] = {
+        // ── Base language codes ──────────────────────────────────────────────
+        { "af",       "Afrikaans" },
+        { "ar",       "Arabic" },
+        { "be",       "Belarusian" },
+        { "bg",       "Bulgarian" },
+        { "bn",       "Bengali" },
+        { "ca",       "Catalan" },
+        { "cs",       "Czech" },
+        { "cy",       "Welsh" },
+        { "da",       "Danish" },
+        { "de",       "German" },
+        { "el",       "Greek" },
+        { "en",       "English" },
+        { "es",       "Spanish" },
+        { "et",       "Estonian" },
+        { "eu",       "Basque" },
+        { "fa",       "Persian" },
+        { "fi",       "Finnish" },
+        { "fr",       "French" },
+        { "ga",       "Irish" },
+        { "gl",       "Galician" },
+        { "he",       "Hebrew" },
+        { "hi",       "Hindi" },
+        { "hr",       "Croatian" },
+        { "hu",       "Hungarian" },
+        { "hy",       "Armenian" },
+        { "id",       "Indonesian" },
+        { "is",       "Icelandic" },
+        { "it",       "Italian" },
+        { "ja",       "Japanese" },
+        { "ka",       "Georgian" },
+        { "kk",       "Kazakh" },
+        { "ko",       "Korean" },
+        { "lt",       "Lithuanian" },
+        { "lv",       "Latvian" },
+        { "mk",       "Macedonian" },
+        { "ms",       "Malay" },
+        { "mt",       "Maltese" },
+        { "nb",       "Norwegian Bokmål" },
+        { "nl",       "Dutch" },
+        { "nn",       "Norwegian Nynorsk" },
+        { "pl",       "Polish" },
+        { "pt",       "Portuguese" },
+        { "ro",       "Romanian" },
+        { "ru",       "Russian" },
+        { "sk",       "Slovak" },
+        { "sl",       "Slovenian" },
+        { "sq",       "Albanian" },
+        { "sr",       "Serbian" },
+        { "sv",       "Swedish" },
+        { "sw",       "Swahili" },
+        { "th",       "Thai" },
+        { "tr",       "Turkish" },
+        { "uk",       "Ukrainian" },
+        { "ur",       "Urdu" },
+        { "uz",       "Uzbek" },
+        { "vi",       "Vietnamese" },
+        { "zh",       "Chinese" },
+        { "zu",       "Zulu" },
+        // ── Arabic variants ──────────────────────────────────────────────────
+        { "ar-AE",    "Arabic (United Arab Emirates)" },
+        { "ar-EG",    "Arabic (Egypt)" },
+        { "ar-SA",    "Arabic (Saudi Arabia)" },
+        // ── Chinese variants ─────────────────────────────────────────────────
+        { "zh-CN",    "Chinese (Simplified, China)" },
+        { "zh-HK",    "Chinese (Traditional, Hong Kong)" },
+        { "zh-MO",    "Chinese (Traditional, Macau)" },
+        { "zh-SG",    "Chinese (Simplified, Singapore)" },
+        { "zh-TW",    "Chinese (Traditional, Taiwan)" },
+        // ── Dutch variants ───────────────────────────────────────────────────
+        { "nl-BE",    "Dutch (Belgium)" },
+        { "nl-NL",    "Dutch (Netherlands)" },
+        // ── English variants ─────────────────────────────────────────────────
+        { "en-AU",    "English (Australia)" },
+        { "en-CA",    "English (Canada)" },
+        { "en-GB",    "English (United Kingdom)" },
+        { "en-IE",    "English (Ireland)" },
+        { "en-IN",    "English (India)" },
+        { "en-NZ",    "English (New Zealand)" },
+        { "en-SG",    "English (Singapore)" },
+        { "en-US",    "English (United States)" },
+        { "en-ZA",    "English (South Africa)" },
+        // ── French variants ──────────────────────────────────────────────────
+        { "fr-BE",    "French (Belgium)" },
+        { "fr-CA",    "French (Canada)" },
+        { "fr-CH",    "French (Switzerland)" },
+        { "fr-FR",    "French (France)" },
+        { "fr-LU",    "French (Luxembourg)" },
+        // ── German variants ──────────────────────────────────────────────────
+        { "de-AT",    "German (Austria)" },
+        { "de-CH",    "German (Switzerland)" },
+        { "de-DE",    "German (Germany)" },
+        { "de-LI",    "German (Liechtenstein)" },
+        { "de-LU",    "German (Luxembourg)" },
+        // ── Italian variants ─────────────────────────────────────────────────
+        { "it-CH",    "Italian (Switzerland)" },
+        { "it-IT",    "Italian (Italy)" },
+        // ── Portuguese variants ──────────────────────────────────────────────
+        { "pt-BR",    "Portuguese (Brazil)" },
+        { "pt-PT",    "Portuguese (Portugal)" },
+        // ── Russian variants ─────────────────────────────────────────────────
+        { "ru-RU",    "Russian (Russia)" },
+        { "ru-UA",    "Russian (Ukraine)" },
+        // ── Serbian variants ─────────────────────────────────────────────────
+        { "sr-Cyrl",    "Serbian (Cyrillic)" },
+        { "sr-Cyrl-RS", "Serbian (Cyrillic, Serbia)" },
+        { "sr-Latn",    "Serbian (Latin)" },
+        { "sr-Latn-RS", "Serbian (Latin, Serbia)" },
+        // ── Spanish variants ─────────────────────────────────────────────────
+        { "es-AR",    "Spanish (Argentina)" },
+        { "es-BO",    "Spanish (Bolivia)" },
+        { "es-CL",    "Spanish (Chile)" },
+        { "es-CO",    "Spanish (Colombia)" },
+        { "es-CR",    "Spanish (Costa Rica)" },
+        { "es-DO",    "Spanish (Dominican Republic)" },
+        { "es-EC",    "Spanish (Ecuador)" },
+        { "es-ES",    "Spanish (Spain)" },
+        { "es-GT",    "Spanish (Guatemala)" },
+        { "es-HN",    "Spanish (Honduras)" },
+        { "es-MX",    "Spanish (Mexico)" },
+        { "es-NI",    "Spanish (Nicaragua)" },
+        { "es-PA",    "Spanish (Panama)" },
+        { "es-PE",    "Spanish (Peru)" },
+        { "es-PR",    "Spanish (Puerto Rico)" },
+        { "es-PY",    "Spanish (Paraguay)" },
+        { "es-SV",    "Spanish (El Salvador)" },
+        { "es-UY",    "Spanish (Uruguay)" },
+        { "es-VE",    "Spanish (Venezuela)" },
+        // ── Swedish variants ─────────────────────────────────────────────────
+        { "sv-FI",    "Swedish (Finland)" },
+        { "sv-SE",    "Swedish (Sweden)" },
+        // ── Other single-region codes ────────────────────────────────────────
+        { "af-ZA",    "Afrikaans (South Africa)" },
+        { "bs-Cyrl",  "Bosnian (Cyrillic)" },
+        { "bs-Latn",  "Bosnian (Latin)" },
+        { "ca-ES",    "Catalan (Spain)" },
+        { "cs-CZ",    "Czech (Czech Republic)" },
+        { "cy-GB",    "Welsh (United Kingdom)" },
+        { "da-DK",    "Danish (Denmark)" },
+        { "el-GR",    "Greek (Greece)" },
+        { "et-EE",    "Estonian (Estonia)" },
+        { "eu-ES",    "Basque (Spain)" },
+        { "fi-FI",    "Finnish (Finland)" },
+        { "ga-IE",    "Irish (Ireland)" },
+        { "gl-ES",    "Galician (Spain)" },
+        { "he-IL",    "Hebrew (Israel)" },
+        { "hi-IN",    "Hindi (India)" },
+        { "hu-HU",    "Hungarian (Hungary)" },
+        { "id-ID",    "Indonesian (Indonesia)" },
+        { "ja-JP",    "Japanese (Japan)" },
+        { "ko-KR",    "Korean (Korea)" },
+        { "lt-LT",    "Lithuanian (Lithuania)" },
+        { "lv-LV",    "Latvian (Latvia)" },
+        { "nl-NL",    "Dutch (Netherlands)" },
+        { "pl-PL",    "Polish (Poland)" },
+        { "ro-RO",    "Romanian (Romania)" },
+        { "sk-SK",    "Slovak (Slovakia)" },
+        { "sl-SI",    "Slovenian (Slovenia)" },
+        { "th-TH",    "Thai (Thailand)" },
+        { "tr-TR",    "Turkish (Turkey)" },
+        { "uk-UA",    "Ukrainian (Ukraine)" },
+        { "vi-VN",    "Vietnamese (Vietnam)" },
+        { "zu-ZA",    "Zulu (South Africa)" },
+    };
+
+    inline constexpr std::size_t KnownCulturesCount = sizeof(KnownCulturesTable) / sizeof(KnownCulturesTable[0]);
+
+} // namespace FoundationLocalisation

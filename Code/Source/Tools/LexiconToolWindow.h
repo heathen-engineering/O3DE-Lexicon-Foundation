@@ -17,52 +17,53 @@
 
 #pragma once
 
+#include "LexiconEntryMap.h"
+#include "LexiconTableModel.h"
+
+#include <FoundationLocalisation/LexiconHintType.h>
+
 #include <QMap>
 #include <QStringList>
 #include <QWidget>
 
-class QComboBox;
 class QFileSystemWatcher;
 class QLabel;
 class QLineEdit;
 class QPushButton;
+class QScrollArea;
 class QSplitter;
+class QStackedWidget;
+class QTabBar;
 class QTableView;
-class QTreeWidget;
-class QTreeWidgetItem;
+class QTextEdit;
+class QTimer;
+class QToolButton;
+class QVBoxLayout;
 
 namespace FoundationLocalisation
 {
     class LexiconGathererInboxWidget;
-    class LexiconInspectorWidget;
     class LexiconTableModel;
     class LexiconTreeModel;
 
     ///<summary>
-    /// "Lexicon Tool" — the main HeLex editor view pane.
+    /// "Lexicon Tool" — the Heathen Localisation Lexicon editor view pane.
     ///
-    /// Layout:
-    ///   Toolbar  — [Reference ▾] [Working ▾] | [⟳ Sync All] | [Export CSV] [Import CSV]
-    ///   ┌──────────────┬──────────────────────────────┬───────────┐
-    ///   │  [key field] │       Workbench              │ Inspector │
-    ///   │  [+ Add Key] │ St │ Key │ Reference│Working │           │
-    ///   │  Explorer    │                              │           │
-    ///   └──────────────┴──────────────────────────────┴───────────┘
-    ///   Gatherer Inbox
+    /// Layout (matches Unity's Localisation Lexicon Project Settings page):
     ///
-    /// Discovery:
-    ///   On show, the window queries LexiconEditorRequestBus::GetKnownFilePaths()
-    ///   for all .helex files found in the project. These populate the Reference
-    ///   and Working dropdowns. The two dropdowns are mutually exclusive — selecting
-    ///   a file in one removes it from the other.
-    ///
-    ///   Reference always has a "——" (no reference) option. When selected, the
-    ///   Source column in the Workbench collapses and the Working column expands.
-    ///
-    /// Super-set sync:
-    ///   On discovery (and after every Add Key / Remove Key), every discovered
-    ///   .helex file is checked against the union of all keys. Any file missing
-    ///   a key gets that key inserted as an empty string.
+    ///  ▾ Source Files
+    ///  ┌──────────────────────────────────────────────────────────────────────┐
+    ///  │  default               [en ✕] [fr ✕]                               │
+    ///  │  [type to search...                                       ] [+]     │
+    ///  │  OtherCulture          [de ✕]                                       │
+    ///  │  [type to search...                                       ] [+]     │
+    ///  │  [New Culture File…]                                                │
+    ///  └──────────────────────────────────────────────────────────────────────┘
+    ///  [ Workbench ]  [ Gather ]  [ CSV ]
+    ///  ┌─────────────────┬────────────────────────────────────────────────────┐
+    ///  │  [key field  ]+│  ✕ │ Key          │ Type   │ Default │ OtherCulture│
+    ///  │  Key tree      │  ✕ │ UI.Title     │ String │ My Game │ Mein Spiel  │
+    ///  └─────────────────┴────────────────────────────────────────────────────┘
     ///</summary>
     class LexiconToolWindow : public QWidget
     {
@@ -76,143 +77,123 @@ namespace FoundationLocalisation
         void showEvent(QShowEvent* event) override;
 
     private slots:
-        // Toolbar
-        void OnReferenceChanged(int index);
-        void OnWorkingChanged(int index);
-        void OnNewLexicon();
-        void OnSyncAll();
-        void OnExportCsv();
-        void OnImportCsv();
-        void OnPreviewToggled(bool checked);
+        // Source Files panel
+        void OnNewCultureFile();
+        void OnToggleSourceFiles();
 
-        // Explorer panel
-        void OnTreeItemSelectionChanged(QTreeWidgetItem* current, QTreeWidgetItem* previous);
-        void OnTableSelectionChanged(const QModelIndex& current, const QModelIndex& previous);
-        void OnFileChanged(const QString& path);
+        // Add Key bar
         void OnAddKey();
+        void OnKeyFieldChanged(const QString& text);
 
-        // Workbench write-back
-        void OnActiveValueEdited(const QString& key, const QString& newValue);
+        // Table signals from LexiconTableModel
+        void OnTypeChanged(const QString& key, LexiconHintType newHint);
+        void OnDefaultValueEdited(const QString& key, const QString& newValue);
+        void OnExtraValueEdited(const QString& key, int extraColIndex, const QString& newValue);
 
-        // Gatherer Inbox write-back
+        // File watcher
+        void OnFileChanged(const QString& path);
+
+        // Tab switching
+        void OnTabChanged(int index);
+
+        // Table context menu (right-click → delete key)
+        void OnTableContextMenuRequested(const QPoint& pos);
+
+        // Gatherer
         void OnGathererItemsAccepted(const QStringList& keys);
 
-        // Inspector write-back
-        void OnInspectorValueEdited(const QString& key, const QString& value);
-        void OnInspectorBrowseAsset(const QString& key);
-
-        // Context menu — remove
-        void OnContextMenuRequested(const QPoint& pos);
+        // CSV tab
+        void OnCsvExport();
+        void OnCsvImport();
+        void OnCsvCopyToClipboard();
 
     private:
-        // ---- Layout helpers ----
-        QWidget* MakeExplorerPanel();
-        QWidget* MakePlaceholder(const QString& name, const QString& note);
-        void     UpdateReferenceColumnVisibility();
-        QWidget* MakeNodeButtons(const QString& fullPath, bool isLeaf, bool hasParent);
+        // ── Layout builders ───────────────────────────────────────────────────
+        QWidget* BuildSourceFilesPanel();
+        QWidget* BuildWorkbenchTab();
+        QWidget* BuildGatherTab();
+        QWidget* BuildCsvTab();
 
-        // ---- Tag tree helpers ----
-        void    RebuildTagTree();
-        void    SelectTreeKey(const QString& path);
-        QString GetSelectedTreeKey() const;
-        void    ShowInspectorForKey(const QString& path);
+        // ── Source Files panel ────────────────────────────────────────────────
+        void RebuildSourceFileEntries();
+        void AddCultureToFile(int fileIdx, const QString& code);
+        void RemoveCultureFromFile(int fileIdx, const QString& code);
+        void ShowCulturePicker(int fileIdx, const QString& filter);
+        void AddExtraColumn(const QString& filePath);
+        void RemoveExtraColumn(const QString& filePath);
+        void ShowExtraColumnPicker();
 
-        // ---- File operations ----
-        /// Queries the editor bus for all discovered .helex paths and rebuilds dropdowns.
+        // ── File operations ───────────────────────────────────────────────────
         void DiscoverFiles();
-
-        /// Rebuilds both combo box contents, enforcing mutual exclusion.
-        /// Call after m_discoveredFiles changes or after a selection changes.
-        void RebuildDropdowns(const QString& keepReference, const QString& keepWorking);
-
-        /// Checks all discovered files against the union of all keys; writes
-        /// missing keys as "" into files that lack them. Returns number of files patched.
-        int RunSuperSetSync();
-
-        /// Writes key=value into every discovered .helex file that does not already
-        /// contain that key. Used by Add Key (value="") and New Lexicon bootstrap.
-        void WriteKeyToAllFiles(const QString& key, const QString& value = QString{});
-
-        /// Removes a key from every discovered .helex file.
+        int  RunSuperSetSync();
+        void WriteKeyToAllFiles(const QString& key, const QString& value = {});
         void RemoveKeyFromAllFiles(const QString& key);
-
-        /// Removes a set of keys from every discovered .helex file in a single
-        /// read-modify-write pass per file. Used by namespace removal.
         void RemoveKeysFromAllFiles(const QStringList& keys);
-
-        /// For each file in newFiles, injects Language.<otherAssetId> into that file
-        /// for every other discovered lexicon, and Language.<newAssetId> into every
-        /// other discovered file. Presents a diff-style confirmation before writing.
-        /// Called by DiscoverFiles() when the workspace gains new .helex files.
         void RunCrossPollination(const QStringList& newFiles);
-
-        /// Creates a minimal default.helex in the project root and rescans.
-        /// Called automatically when no .helex files are found on discovery.
         void CreateDefaultLexicon();
-
-        /// Writes value into the specified .helex file for the given key.
-        /// Creates or updates the entry. Used by OnActiveValueEdited write-back.
-        bool WriteValueToFile(const QString& filePath,
-                              const QString& key,
+        bool WriteValueToFile(const QString& filePath, const QString& key,
                               const QJsonValue& value);
-
-        /// Re-loads both tree and table from the current reference/working paths.
+        void WriteTypeToFile(const QString& filePath, const QString& key,
+                             LexiconHintType hint);
         void ReloadModels();
 
-        // ---- Settings persistence ----
-        void SaveSplitterState();
-        void RestoreSplitterState();
+        // ── Column layout ─────────────────────────────────────────────────────
+        void ApplyValueColumnModes();
 
-        // ---- Toolbar widgets ----
-        QComboBox*   m_referenceCombo = nullptr;
-        QComboBox*   m_workingCombo   = nullptr;
-        QToolButton* m_previewBtn     = nullptr;
+        // ── Settings persistence ──────────────────────────────────────────────
+        void SaveState();
+        void RestoreState();
 
-        // Culture that was active before Live Preview was switched on.
-        // Restored when the toggle is switched back off.
-        QString m_previewPriorCulture;
+        // ── Source Files panel ────────────────────────────────────────────────
+        QWidget*     m_sourcesPanel      = nullptr;   ///< header row (always visible)
+        QScrollArea* m_sourcesScrollArea = nullptr;   ///< scrollable file list
+        QVBoxLayout* m_sourcesBodyLayout = nullptr;
+        QToolButton* m_sourcesToggle     = nullptr;
+        QWidget*     m_sourcesBody       = nullptr;
+        bool         m_sourcesExpanded   = true;
 
-        // ---- Explorer panel ----
-        QTreeWidget* m_treeWidget     = nullptr;
-        QLineEdit*   m_keyField       = nullptr;
-        QPushButton* m_addKeyBtn      = nullptr;
+        // ── Sources ↕ Tabs splitter ───────────────────────────────────────────
+        QSplitter*    m_sourcesSplitter = nullptr;
+
+        // ── Tab bar + stacked content ─────────────────────────────────────────
+        QTabBar*        m_tabBar   = nullptr;
+        QStackedWidget* m_tabStack = nullptr;
+
+        // ── Workbench tab ─────────────────────────────────────────────────────
+        QLineEdit*   m_keyField        = nullptr;
+        QPushButton* m_addKeyBtn       = nullptr;
         QLabel*      m_keyWarningLabel = nullptr;
+        QTableView*  m_tableView       = nullptr;
 
-        // ---- Workbench ----
-        QTableView*         m_tableView  = nullptr;
-        LexiconTableModel*  m_tableModel = nullptr;
+        LexiconTreeModel*  m_treeModel  = nullptr;  ///< data loading only (not displayed)
+        LexiconTableModel* m_tableModel = nullptr;
 
-        // ---- Tree model (shared by Explorer + Workbench) ----
-        LexiconTreeModel* m_treeModel = nullptr;
+        // ── CSV tab ───────────────────────────────────────────────────────────
+        QTextEdit* m_csvPreview = nullptr;
 
-        // ---- File watcher ----
-        QFileSystemWatcher* m_fileWatcher    = nullptr;
-        bool                m_syncingSelection = false;
-
-        // ---- Other panels ----
-        LexiconInspectorWidget*     m_inspector  = nullptr;
+        // ── Gather tab ────────────────────────────────────────────────────────
         LexiconGathererInboxWidget* m_inboxPanel = nullptr;
 
-        // ---- Splitters ----
-        QSplitter* m_verticalSplitter   = nullptr;
-        QSplitter* m_horizontalSplitter = nullptr;
+        // ── File watcher ──────────────────────────────────────────────────────
+        QFileSystemWatcher* m_fileWatcher = nullptr;
 
-        // ---- Validation status bar ----
-        QLabel* m_validationLabel = nullptr;
+        // ── Workspace state ───────────────────────────────────────────────────
+        struct HelexFileEntry
+        {
+            QString     path;
+            QString     assetId;
+            QStringList cultures;
+        };
+        QVector<HelexFileEntry> m_fileEntries;       ///< all discovered files + metadata
+        QStringList             m_discoveredFiles;   ///< all .helex source paths
+        QMap<QString, QString>  m_fileAssetIds;      ///< path → assetId label
+        QString                 m_localisationDir;   ///< directory of default.helex
 
-        // ---- Workspace state ----
-        QStringList             m_discoveredFiles;   ///< all .helex source paths from last discovery
-        QMap<QString, QString>  m_fileAssetIds;      ///< path → assetId label for dropdown display
-        QString                 m_localisationDir;   ///< directory of default.helex; used as root for New browse
+        QStringList m_extraColumnPaths;  ///< extra culture file paths added to workbench table
 
-        static constexpr const char* SettingsGroup = "LexiconTool";
-        static constexpr const char* VSplitterKey  = "VSplitterState";
-        static constexpr const char* HSplitterKey  = "HSplitterState";
+        static constexpr const char* SettingsGroup  = "HeathenEditor/LexiconTool";
 
-        // Sentinel stored as combo item data for the "——" no-reference option
-        static const QString NoReference; // = ""
-        // Sentinel stored as combo item data for the "New…" working option
-        static const QString NewLexiconSentinel; // = "__new__"
+        static const QString NewLexiconSentinel;
     };
 
 } // namespace FoundationLocalisation

@@ -22,6 +22,12 @@
 #include <AzCore/std/containers/vector.h>
 #include <AzCore/std/string/string.h>
 
+#ifndef Q_MOC_RUN
+#  include <FoundationLocalisation/LexiconHintType.h>
+#else
+namespace FoundationLocalisation { enum class LexiconHintType : unsigned char; }
+#endif
+
 class QLineEdit;
 class QPushButton;
 class QTreeWidget;
@@ -62,12 +68,22 @@ namespace FoundationLocalisation
         ///<summary>Returns the chosen dot-path key, or empty if cancelled.</summary>
         AZStd::string GetSelectedKey() const;
 
+        ///<summary>
+        /// Filters the key list to only entries whose hint matches the given type.
+        /// Pass LexiconHintType::None (the default) to show all keys.
+        /// Call this before exec() — the tree is rebuilt immediately.
+        ///</summary>
+        void SetHintFilter(LexiconHintType filter);
+
     private slots:
         void OnFilterChanged(const QString& text);
         void OnCurrentItemChanged(QTreeWidgetItem* current, QTreeWidgetItem* previous);
         void OnItemDoubleClicked(QTreeWidgetItem* item, int column);
 
     private:
+        ///<summary>Fetches keys from the bus, applies m_hintFilter, rebuilds the tree.</summary>
+        void RefreshTree();
+
         void PopulateTree(const AZStd::vector<AZStd::string>& keys);
 
         ///<summary>
@@ -76,9 +92,11 @@ namespace FoundationLocalisation
         ///</summary>
         bool UpdateItemVisibility(QTreeWidgetItem* item, const QString& filter);
 
-        QLineEdit*   m_filterEdit = nullptr;
-        QTreeWidget* m_tree       = nullptr;
-        QPushButton* m_okButton   = nullptr;
+        QLineEdit*   m_filterEdit  = nullptr;
+        QTreeWidget* m_tree        = nullptr;
+        QPushButton* m_okButton    = nullptr;
+
+        LexiconHintType m_hintFilter = LexiconHintType::None;
     };
 
 } // namespace FoundationLocalisation

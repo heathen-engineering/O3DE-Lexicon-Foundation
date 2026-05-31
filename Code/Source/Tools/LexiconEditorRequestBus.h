@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include <FoundationLocalisation/LexiconHintType.h>
+
 #include <AzCore/EBus/EBus.h>
 #include <AzCore/RTTI/RTTI.h>
 #include <AzCore/std/containers/vector.h>
@@ -64,6 +66,13 @@ namespace FoundationLocalisation
         /// updated in the Asset Catalog (i.e. when .helex source files change).
         ///</summary>
         virtual void RefreshKeyTree() = 0;
+
+        ///<summary>
+        /// Returns the hint type for the given dot-path key, as authored in the
+        /// .helex source file. Returns LexiconHintType::None if the key is unknown
+        /// or was authored without an explicit hint.
+        ///</summary>
+        virtual LexiconHintType GetHintForKey(const AZStd::string& key) const = 0;
     };
 
     class LexiconEditorRequestBusTraits : public AZ::EBusTraits

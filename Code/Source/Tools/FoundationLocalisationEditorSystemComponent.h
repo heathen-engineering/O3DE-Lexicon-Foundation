@@ -22,6 +22,7 @@
 #include "LexiconEditorRequestBus.h"
 #include "LexiconPropertyHandler.h"
 
+#include <AzCore/std/containers/unordered_map.h>
 #include <AzCore/std/containers/vector.h>
 #include <AzCore/std/string/string.h>
 #include <AzFramework/Asset/AssetCatalogBus.h>
@@ -73,6 +74,7 @@ namespace FoundationLocalisation
         const AZStd::vector<AZStd::string>& GetKnownFilePaths() const override;
         AZStd::string                        GetProjectSourcePath() const override;
         void RefreshKeyTree() override;
+        LexiconHintType GetHintForKey(const AZStd::string& key) const override;
         ////////////////////////////////////////////////////////////////////////
 
         ////////////////////////////////////////////////////////////////////////
@@ -105,9 +107,10 @@ namespace FoundationLocalisation
         LexiconSoundPropertyHandler* m_soundHandler = nullptr;
         LexiconAssetPropertyHandler* m_assetPropertyHandler = nullptr;
 
-        AZStd::vector<AZStd::string> m_knownKeys;
-        AZStd::vector<AZStd::string> m_knownFilePaths;
-        AZStd::string                m_projectSourcePath;
+        AZStd::vector<AZStd::string>                          m_knownKeys;
+        AZStd::vector<AZStd::string>                          m_knownFilePaths;
+        AZStd::string                                         m_projectSourcePath;
+        AZStd::unordered_map<AZStd::string, LexiconHintType> m_keyHints;
     };
 
 } // namespace FoundationLocalisation

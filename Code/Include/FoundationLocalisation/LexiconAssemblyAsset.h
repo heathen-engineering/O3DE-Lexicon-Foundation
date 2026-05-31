@@ -25,6 +25,7 @@
 #include <AzCore/std/string/string.h>
 
 #include <FoundationLocalisation/FoundationLocalisationTypeIds.h>
+#include <FoundationLocalisation/LexiconHintType.h>
 
 namespace Heathen
 {
@@ -63,17 +64,28 @@ namespace Heathen
         {
             AZ_TYPE_INFO(Entry, LexiconAssemblyEntryTypeId);
 
-            static constexpr AZ::u32 TypeFlagMask   = 0x80000000u;
-            static constexpr AZ::u32 TypeFlagString = 0x00000000u;
-            static constexpr AZ::u32 TypeFlagAsset  = 0x80000000u;
-            static constexpr AZ::u32 SizeMask       = 0x7FFFFFFFu;
+            // Bits 31–29 encode the entry subtype; bit 28–0 encode the data size.
+            static constexpr AZ::u32 TypeFlagMask   = 0xE0000000u;
+            static constexpr AZ::u32 SizeMask       = 0x1FFFFFFFu;
+
+            // Subtype constants (bits 31–29 in position)
+            static constexpr AZ::u32 TypeString     = 0x00000000u; // 0b000
+            static constexpr AZ::u32 TypeSound      = 0x20000000u; // 0b001
+            static constexpr AZ::u32 TypeTexture    = 0x40000000u; // 0b010
+            static constexpr AZ::u32 TypeSpawnable  = 0x60000000u; // 0b011
+            static constexpr AZ::u32 TypeAsset      = 0x80000000u; // 0b100 (catch-all)
+
+            // Legacy aliases kept for existing callers
+            static constexpr AZ::u32 TypeFlagString = TypeString;
+            static constexpr AZ::u32 TypeFlagAsset  = TypeAsset;
 
             AZ::u64 m_keyHash    = 0;
             AZ::u32 m_dataOffset = 0;
             AZ::u32 m_dataSize   = 0;
 
-            bool     IsAssetId() const { return (m_dataSize & TypeFlagMask) != 0; }
-            AZ::u32  DataSize()  const { return  m_dataSize & SizeMask; }
+            bool     IsAssetId()   const { return (m_dataSize & TypeFlagMask) != 0; }
+            AZ::u32  DataSize()    const { return  m_dataSize & SizeMask; }
+            FoundationLocalisation::LexiconHintType GetHintType() const;
         };
 
         ///<summary>
@@ -87,6 +99,11 @@ namespace Heathen
         /// Returns a null AZ::Uuid if the key is not found or the entry is not an asset reference.
         ///</summary>
         AZ::Uuid FindAssetId(AZ::u64 key) const;
+
+        ///<summary>
+        /// Returns the hint type for the given key, or None if the key is not found.
+        ///</summary>
+        FoundationLocalisation::LexiconHintType FindHintType(AZ::u64 key) const;
 
         /// Stable internal identifier set from the .helex "assetId" field
         /// (e.g. "French_Standard"). Used by GetAvailableLexiconIds() and

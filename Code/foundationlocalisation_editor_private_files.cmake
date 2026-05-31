@@ -18,9 +18,14 @@ set(FILES
     Source/Tools/LexiconGathererWorker.cpp
     Source/Tools/LexiconGathererInboxWidget.h
     Source/Tools/LexiconGathererInboxWidget.cpp
+    Source/Tools/LexiconSettingsPage.h
+    Source/Tools/LexiconSettingsPage.cpp
     Source/Tools/LexiconToolWindow.h
     Source/Tools/LexiconToolWindow.cpp
+    Source/Tools/KnownCultures.h
     Source/Tools/LexiconEntryMap.h
+    Source/Tools/LexiconHintTypeDelegate.h
+    Source/Tools/LexiconHintTypeDelegate.cpp
     Source/Tools/LexiconTreeItem.h
     Source/Tools/LexiconTreeModel.h
     Source/Tools/LexiconTreeModel.cpp

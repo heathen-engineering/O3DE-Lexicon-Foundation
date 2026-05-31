@@ -33,6 +33,43 @@
 
 #include <xxHash/xxHashFunctions.h>
 
+// ---------------------------------------------------------------------------
+// Static helpers for standalone Script Canvas "Resolve" nodes.
+// These call the bus so devs don't need an EBus connection node in SC.
+// ---------------------------------------------------------------------------
+namespace
+{
+    AZStd::string Localisation_ResolveString(const AZStd::string& path)
+    {
+        AZStd::string result;
+        FoundationLocalisation::FoundationLocalisationRequestBus::BroadcastResult(result,
+            static_cast<AZStd::string(FoundationLocalisation::FoundationLocalisationRequests::*)(const AZStd::string&)>(
+                &FoundationLocalisation::FoundationLocalisationRequests::ResolveString),
+            path);
+        return result;
+    }
+
+    AZ::Uuid Localisation_ResolveSound(const AZStd::string& path)
+    {
+        AZ::Uuid result = AZ::Uuid::CreateNull();
+        FoundationLocalisation::FoundationLocalisationRequestBus::BroadcastResult(result,
+            static_cast<AZ::Uuid(FoundationLocalisation::FoundationLocalisationRequests::*)(const AZStd::string&)>(
+                &FoundationLocalisation::FoundationLocalisationRequests::ResolveAssetId),
+            path);
+        return result;
+    }
+
+    AZ::Uuid Localisation_ResolveAsset(const AZStd::string& path)
+    {
+        AZ::Uuid result = AZ::Uuid::CreateNull();
+        FoundationLocalisation::FoundationLocalisationRequestBus::BroadcastResult(result,
+            static_cast<AZ::Uuid(FoundationLocalisation::FoundationLocalisationRequests::*)(const AZStd::string&)>(
+                &FoundationLocalisation::FoundationLocalisationRequests::ResolveAssetId),
+            path);
+        return result;
+    }
+} // anonymous namespace
+
 namespace FoundationLocalisation
 {
     AZ_COMPONENT_IMPL(FoundationLocalisationSystemComponent, "FoundationLocalisationSystemComponent",
@@ -57,6 +94,22 @@ namespace FoundationLocalisation
 
         if (auto* behavior = azrtti_cast<AZ::BehaviorContext*>(context))
         {
+            // Standalone SC nodes — devs can resolve a key without an EBus connection node.
+            behavior->Method("Resolve String", &Localisation_ResolveString,
+                {{{ "Key", "Dot-path localisation key e.g. Menu.Play" }}},
+                "Resolves a dot-path key to a localised string using the active culture")
+                ->Attribute(AZ::Script::Attributes::Category, "Localisation");
+
+            behavior->Method("Resolve Sound", &Localisation_ResolveSound,
+                {{{ "Key", "Dot-path localisation key for a sound asset e.g. Audio.Theme" }}},
+                "Resolves a dot-path key to a sound asset UUID using the active culture")
+                ->Attribute(AZ::Script::Attributes::Category, "Localisation");
+
+            behavior->Method("Resolve Asset", &Localisation_ResolveAsset,
+                {{{ "Key", "Dot-path localisation key for an asset e.g. UI.Logo" }}},
+                "Resolves a dot-path key to an asset UUID using the active culture")
+                ->Attribute(AZ::Script::Attributes::Category, "Localisation");
+
             // Expose overloaded methods with distinct SC node names via explicit casts.
             behavior->EBus<FoundationLocalisationRequestBus>("Lexicon Localisation")
                 ->Attribute(AZ::Script::Attributes::Category, "Localisation")
@@ -79,11 +132,17 @@ namespace FoundationLocalisation
                 ->Event("Load Culture",
                     &FoundationLocalisationRequests::LoadCulture,
                     {{{ "Culture Code", "IETF culture code e.g. en-GB" }}})
+                ->Event("Use Culture",
+                    &FoundationLocalisationRequests::UseCulture,
+                    {{{ "Culture Code", "Alias for Load Culture — IETF culture code e.g. en-GB" }}})
                 ->Event("Get Active Culture",
                     &FoundationLocalisationRequests::GetActiveCulture)
                 ->Event("Set Default Culture",
                     &FoundationLocalisationRequests::SetDefaultCulture,
                     {{{ "Culture Code", "IETF culture code e.g. en-GB" }}})
+                ->Event("Get Mapped Culture Codes",
+                    &FoundationLocalisationRequests::GetMappedCultureCodes,
+                    "Returns every IETF culture code served by any currently loaded lexicon")
                 ->Event("Get Available Lexicon Ids",
                     &FoundationLocalisationRequests::GetAvailableLexiconIds)
                 ->Event("Get Lexicon Display Name",
@@ -148,20 +207,55 @@ namespace FoundationLocalisation
     ////////////////////////////////////////////////////////////////////////
     // FoundationLocalisationRequestBus
 
+    // Returns the base language of an IETF code (e.g. "fr" from "fr-CA"), or empty.
+    static AZStd::string BaseCulture(const AZStd::string& culture)
+    {
+        const size_t dash = culture.find('-');
+        return (dash != AZStd::string::npos) ? culture.substr(0, dash) : AZStd::string{};
+    }
+
+    // Scans m_allLoadedAssets for the first asset that services 'culture'.
+    const Heathen::LexiconAssemblyAsset*
+    FoundationLocalisationSystemComponent::FindAssetForCulture(const AZStd::string& culture) const
+    {
+        if (culture.empty()) return nullptr;
+        for (const auto& asset : m_allLoadedAssets)
+        {
+            if (!asset.IsReady()) continue;
+            for (const auto& c : asset->m_cultures)
+                if (c == culture) return asset.Get();
+        }
+        return nullptr;
+    }
+
     AZStd::string FoundationLocalisationSystemComponent::ResolveString(AZ::u64 key)
     {
+        // 1. Exact active culture
         if (m_activeAsset.IsReady())
         {
             AZStd::string result = m_activeAsset->FindString(key);
-            if (!result.empty())
-            {
-                return result;
-            }
+            if (!result.empty()) return result;
         }
 
+        // 2. Base language of active culture (e.g. fr-CA → fr)
+        if (const auto* base = FindAssetForCulture(BaseCulture(m_activeCulture)))
+        {
+            AZStd::string result = base->FindString(key);
+            if (!result.empty()) return result;
+        }
+
+        // 3. Default culture
         if (m_defaultAsset.IsReady())
         {
-            return m_defaultAsset->FindString(key);
+            AZStd::string result = m_defaultAsset->FindString(key);
+            if (!result.empty()) return result;
+        }
+
+        // 4. Base language of default culture
+        if (const auto* base = FindAssetForCulture(BaseCulture(m_defaultCulture)))
+        {
+            AZStd::string result = base->FindString(key);
+            if (!result.empty()) return result;
         }
 
         return {};
@@ -174,18 +268,32 @@ namespace FoundationLocalisation
 
     AZ::Uuid FoundationLocalisationSystemComponent::ResolveAssetId(AZ::u64 key)
     {
+        // 1. Exact active culture
         if (m_activeAsset.IsReady())
         {
             AZ::Uuid result = m_activeAsset->FindAssetId(key);
-            if (!result.IsNull())
-            {
-                return result;
-            }
+            if (!result.IsNull()) return result;
         }
 
+        // 2. Base language of active culture
+        if (const auto* base = FindAssetForCulture(BaseCulture(m_activeCulture)))
+        {
+            AZ::Uuid result = base->FindAssetId(key);
+            if (!result.IsNull()) return result;
+        }
+
+        // 3. Default culture
         if (m_defaultAsset.IsReady())
         {
-            return m_defaultAsset->FindAssetId(key);
+            AZ::Uuid result = m_defaultAsset->FindAssetId(key);
+            if (!result.IsNull()) return result;
+        }
+
+        // 4. Base language of default culture
+        if (const auto* base = FindAssetForCulture(BaseCulture(m_defaultCulture)))
+        {
+            AZ::Uuid result = base->FindAssetId(key);
+            if (!result.IsNull()) return result;
         }
 
         return AZ::Uuid::CreateNull();
@@ -222,6 +330,11 @@ namespace FoundationLocalisation
             &AZ::Data::AssetCatalogRequests::EnumerateAssets, nullptr, enumCb, nullptr);
     }
 
+    void FoundationLocalisationSystemComponent::UseCulture(const AZStd::string& cultureCode)
+    {
+        LoadCulture(cultureCode);
+    }
+
     AZStd::string FoundationLocalisationSystemComponent::GetActiveCulture() const
     {
         return m_activeCulture;
@@ -230,6 +343,7 @@ namespace FoundationLocalisation
     void FoundationLocalisationSystemComponent::SetDefaultCulture(const AZStd::string& cultureCode)
     {
         m_defaultCulture = cultureCode;
+        LexiconNotificationBus::Broadcast(&LexiconNotifications::OnDefaultCultureChanged, cultureCode);
 
         AZ::Data::AssetCatalogRequests::AssetEnumerationCB enumCb =
             [this](const AZ::Data::AssetId assetId, const AZ::Data::AssetInfo& info)
@@ -264,6 +378,22 @@ namespace FoundationLocalisation
         return ids;
     }
 
+    AZStd::vector<AZStd::string> FoundationLocalisationSystemComponent::GetMappedCultureCodes() const
+    {
+        AZStd::vector<AZStd::string> codes;
+        for (const auto& asset : m_allLoadedAssets)
+        {
+            if (!asset.IsReady()) continue;
+            for (const auto& culture : asset->m_cultures)
+            {
+                const bool already = AZStd::find(codes.begin(), codes.end(), culture) != codes.end();
+                if (!already)
+                    codes.push_back(culture);
+            }
+        }
+        return codes;
+    }
+
     AZStd::string FoundationLocalisationSystemComponent::GetLexiconDisplayName(
         const AZStd::string& assetId) const
     {
@@ -288,6 +418,21 @@ namespace FoundationLocalisation
         return assetId;
     }
 
+    LexiconHintType FoundationLocalisationSystemComponent::GetEntryHintType(AZ::u64 key) const
+    {
+        if (m_activeAsset.IsReady())
+        {
+            LexiconHintType t = m_activeAsset->FindHintType(key);
+            if (t != LexiconHintType::None)
+                return t;
+        }
+        if (m_defaultAsset.IsReady())
+        {
+            return m_defaultAsset->FindHintType(key);
+        }
+        return LexiconHintType::None;
+    }
+
     void FoundationLocalisationSystemComponent::OnAssetReady(
         AZ::Data::Asset<AZ::Data::AssetData> asset)
     {
@@ -305,6 +450,7 @@ namespace FoundationLocalisation
         if (servesActive && !m_activeAsset.IsReady())
         {
             m_activeAsset = asset;
+            LexiconNotificationBus::Broadcast(&LexiconNotifications::OnCultureChanged, m_activeCulture);
         }
         else if (servesDefault && !m_defaultAsset.IsReady())
         {

@@ -26,36 +26,40 @@ namespace FoundationLocalisation
     {
     }
 
-    void LexiconTableModel::SetEntries(const LexiconEntryMap& entries,
-                                        const QString&          filterPrefix,
-                                        bool                    hasSourceFile,
-                                        bool                    hasActiveFile)
+    void LexiconTableModel::SetDefaultEntries(const LexiconEntryMap& entries,
+                                               const QString& filterPrefix)
     {
         beginResetModel();
-
-        m_hasSourceFile = hasSourceFile;
-        m_hasActiveFile = hasActiveFile;
         m_rows.clear();
 
         for (auto it = entries.begin(); it != entries.end(); ++it)
         {
             const QString& key = it.key();
-
-            // Apply prefix filter: exact match or child key
-            if (!filterPrefix.isEmpty())
-            {
-                if (key != filterPrefix && !key.startsWith(filterPrefix + QLatin1Char('.')))
-                    continue;
-            }
-
+            if (!filterPrefix.isEmpty() &&
+                key != filterPrefix && !key.startsWith(filterPrefix + QLatin1Char('.')))
+                continue;
             m_rows.append(Row{ key, it.value() });
         }
 
         endResetModel();
     }
 
-    ////////////////////////////////////////////////////////////////////////
-    // QAbstractTableModel
+    void LexiconTableModel::SetExtraColumns(const QVector<ExtraColumn>& extraCols)
+    {
+        beginResetModel();
+        m_extraCols = extraCols;
+        endResetModel();
+    }
+
+    void LexiconTableModel::SetShowAddColumn(bool show)
+    {
+        if (m_showAddColumn == show) return;
+        beginResetModel();
+        m_showAddColumn = show;
+        endResetModel();
+    }
+
+    // ── QAbstractTableModel ───────────────────────────────────────────────────
 
     int LexiconTableModel::rowCount(const QModelIndex& parent) const
     {
@@ -64,7 +68,8 @@ namespace FoundationLocalisation
 
     int LexiconTableModel::columnCount(const QModelIndex& parent) const
     {
-        return parent.isValid() ? 0 : ColCount;
+        if (parent.isValid()) return 0;
+        return FixedColCount + m_extraCols.size() + (m_showAddColumn ? 1 : 0);
     }
 
     QVariant LexiconTableModel::data(const QModelIndex& index, int role) const
@@ -74,39 +79,52 @@ namespace FoundationLocalisation
 
         const Row& row = m_rows[index.row()];
         const int  col = index.column();
+        const bool isExtra = (col >= FixedColCount);
+        const int  extraIdx = col - FixedColCount;
+
+        // Phantom [+] column — no data in cells, only in header
+        if (m_showAddColumn && col == FixedColCount + (int)m_extraCols.size())
+            return {};
 
         switch (role)
         {
         case Qt::DisplayRole:
-            switch (col)
-            {
-            case ColStatus: return StatusGlyph(row.entry, m_hasSourceFile, m_hasActiveFile);
-            case ColKey:    return row.key;
-            case ColSource: return row.entry.sourceValue;
-            case ColActive: return row.entry.activeValue;
-            default:        return {};
-            }
-
-        case Qt::ForegroundRole:
-            if (col == ColStatus)
-                return StatusColor(row.entry, m_hasSourceFile, m_hasActiveFile);
-            return {};
-
-        case Qt::ToolTipRole:
-            if (col == ColStatus)
-            {
-                const LexiconEntry& e = row.entry;
-                if (!m_hasSourceFile && !m_hasActiveFile)  return QStringLiteral("No files open");
-                if (e.sourceValue.isEmpty() && e.activeValue.isEmpty())  return QStringLiteral("Empty — no value in either file");
-                if (!m_hasActiveFile || e.activeValue.isEmpty())         return QStringLiteral("Missing translation in active file");
-                if (!m_hasSourceFile || e.sourceValue.isEmpty())         return QStringLiteral("Orphan — key not in source file");
-                return QStringLiteral("Translated");
-            }
-            if (col == ColKey) return row.key;
+            if (col == ColKey)     return row.key;
+            if (col == ColType)    return HintTypeLabel(row.entry.hintType);
+            if (col == ColDefault) return row.entry.activeValue;
+            if (isExtra && extraIdx < m_extraCols.size())
+                return m_extraCols[extraIdx].values.value(row.key, QString{});
             return {};
 
         case Qt::EditRole:
-            if (col == ColActive) return row.entry.activeValue;
+            if (col == ColType)    return static_cast<int>(row.entry.hintType);
+            if (col == ColDefault) return row.entry.activeValue;
+            if (isExtra && extraIdx < m_extraCols.size())
+                return m_extraCols[extraIdx].values.value(row.key, QString{});
+            return {};
+
+        case Qt::ForegroundRole:
+            return {};
+
+        case Qt::BackgroundRole:
+        {
+            // Grey = empty default; amber = empty extra column
+            if (col == ColDefault && row.entry.activeValue.isEmpty())
+                return QColor(60, 60, 60);
+            if (isExtra && extraIdx < m_extraCols.size())
+            {
+                const QString v = m_extraCols[extraIdx].values.value(row.key, QString{});
+                if (v.isEmpty())
+                    return QColor(80, 70, 30);
+            }
+            return {};
+        }
+
+        case Qt::TextAlignmentRole:
+            return {};
+
+        case Qt::ToolTipRole:
+            if (col == ColKey) return row.key;
             return {};
 
         default:
@@ -114,21 +132,24 @@ namespace FoundationLocalisation
         }
     }
 
-    QVariant LexiconTableModel::headerData(int section,
-                                            Qt::Orientation orientation,
-                                            int role) const
+    QVariant LexiconTableModel::headerData(int section, Qt::Orientation orientation, int role) const
     {
         if (orientation != Qt::Horizontal || role != Qt::DisplayRole)
             return {};
 
-        switch (section)
-        {
-        case ColStatus: return QStringLiteral("St.");
-        case ColKey:    return QStringLiteral("Key");
-        case ColSource: return QStringLiteral("Source Value");
-        case ColActive: return QStringLiteral("Active Value");
-        default:        return {};
-        }
+        if (section == ColKey)     return {}; // header replaced by the key-input overlay widget
+        if (section == ColType)    return QStringLiteral("Type");
+        if (section == ColDefault) return QStringLiteral("Default");
+
+        const int extraIdx = section - FixedColCount;
+        if (extraIdx >= 0 && extraIdx < m_extraCols.size())
+            return m_extraCols[extraIdx].displayName;
+
+        // Phantom [+] add-column button in the header
+        if (m_showAddColumn && section == FixedColCount + (int)m_extraCols.size())
+            return QStringLiteral("[+]");
+
+        return {};
     }
 
     Qt::ItemFlags LexiconTableModel::flags(const QModelIndex& index) const
@@ -136,54 +157,101 @@ namespace FoundationLocalisation
         if (!index.isValid())
             return Qt::NoItemFlags;
 
+        const int col = index.column();
+
+        // Phantom [+] column — not interactive in cells
+        if (m_showAddColumn && col == FixedColCount + (int)m_extraCols.size())
+            return Qt::NoItemFlags;
+
         Qt::ItemFlags f = Qt::ItemIsEnabled | Qt::ItemIsSelectable;
-        if (index.column() == ColActive && m_hasActiveFile)
+        if (col == ColType || col == ColDefault || col >= FixedColCount)
             f |= Qt::ItemIsEditable;
+
         return f;
     }
 
     bool LexiconTableModel::setData(const QModelIndex& index, const QVariant& value, int role)
     {
-        if (role != Qt::EditRole || !index.isValid())
-            return false;
-        if (index.column() != ColActive || index.row() >= m_rows.size())
+        if (!index.isValid() || index.row() >= m_rows.size())
             return false;
 
-        const QString newValue = value.toString();
+        if (role != Qt::EditRole)
+            return false;
+
         Row& row = m_rows[index.row()];
+        const int col = index.column();
 
-        if (row.entry.activeValue == newValue)
-            return false;
+        if (col == ColType)
+        {
+            const auto hint = static_cast<LexiconHintType>(value.toInt());
+            if (row.entry.hintType == hint) return false;
+            row.entry.hintType = hint;
+            row.entry.isAsset  = (hint != LexiconHintType::None && hint != LexiconHintType::String);
+            emit dataChanged(index, index, { Qt::DisplayRole, Qt::EditRole });
+            emit TypeChanged(row.key, hint);
+            return true;
+        }
 
-        row.entry.activeValue = newValue;
-        emit dataChanged(index, index, { Qt::DisplayRole, Qt::EditRole });
-        emit ActiveValueEdited(row.key, newValue);
-        return true;
+        if (col == ColDefault)
+        {
+            const QString newVal = value.toString();
+            if (row.entry.activeValue == newVal) return false;
+            row.entry.activeValue = newVal;
+            emit dataChanged(index, index, { Qt::DisplayRole, Qt::EditRole });
+            emit DefaultValueEdited(row.key, newVal);
+            return true;
+        }
+
+        const int extraIdx = col - FixedColCount;
+        if (extraIdx >= 0 && extraIdx < m_extraCols.size())
+        {
+            const QString newVal = value.toString();
+            m_extraCols[extraIdx].values[row.key] = newVal;
+            emit dataChanged(index, index, { Qt::DisplayRole, Qt::EditRole });
+            emit ExtraValueEdited(row.key, extraIdx, newVal);
+            return true;
+        }
+
+        return false;
     }
 
-    ////////////////////////////////////////////////////////////////////////
-    // Private helpers
+    // ── Hint type helpers ─────────────────────────────────────────────────────
 
-    QString LexiconTableModel::StatusGlyph(const LexiconEntry& e,
-                                            bool hasSource,
-                                            bool hasActive)
+    QString LexiconTableModel::HintTypeLabel(LexiconHintType hint)
     {
-        if (!hasSource && !hasActive)                                      return QStringLiteral("\u25CB"); // ○
-        if (hasActive && hasSource && !e.activeValue.isEmpty())            return QStringLiteral("\u2713"); // ✓
-        if (hasActive && (e.activeValue.isEmpty()) && !e.sourceValue.isEmpty()) return QStringLiteral("\u26A0"); // ⚠
-        if (hasSource && e.sourceValue.isEmpty() && !e.activeValue.isEmpty())   return QStringLiteral("\u2717"); // ✗
-        return QStringLiteral("\u25CB");                                        // ○ fallback
+        switch (hint)
+        {
+        case LexiconHintType::String:    return QStringLiteral("String");
+        case LexiconHintType::Sound:     return QStringLiteral("Sound");
+        case LexiconHintType::Texture:   return QStringLiteral("Texture");
+        case LexiconHintType::Spawnable: return QStringLiteral("Spawnable");
+        case LexiconHintType::Asset:     return QStringLiteral("Asset");
+        default:                         return QStringLiteral("String");
+        }
     }
 
-    QColor LexiconTableModel::StatusColor(const LexiconEntry& e,
-                                           bool hasSource,
-                                           bool hasActive)
+    QStringList LexiconTableModel::HintTypeLabels()
     {
-        if (!hasSource && !hasActive)                                           return QColor(120, 120, 120);
-        if (hasActive && hasSource && !e.activeValue.isEmpty())                 return QColor(80,  200, 80);  // green
-        if (hasActive && e.activeValue.isEmpty() && !e.sourceValue.isEmpty())   return QColor(200, 160, 0);   // amber
-        if (hasSource && e.sourceValue.isEmpty() && !e.activeValue.isEmpty())   return QColor(160, 80,  80);  // red/grey
-        return QColor(120, 120, 120);
+        return {
+            QStringLiteral("String"),
+            QStringLiteral("Sound"),
+            QStringLiteral("Texture"),
+            QStringLiteral("Spawnable"),
+            QStringLiteral("Asset"),
+        };
+    }
+
+    LexiconHintType LexiconTableModel::HintTypeFromIndex(int idx)
+    {
+        switch (idx)
+        {
+        case 0: return LexiconHintType::String;
+        case 1: return LexiconHintType::Sound;
+        case 2: return LexiconHintType::Texture;
+        case 3: return LexiconHintType::Spawnable;
+        case 4: return LexiconHintType::Asset;
+        default: return LexiconHintType::String;
+        }
     }
 
     ////////////////////////////////////////////////////////////////////////

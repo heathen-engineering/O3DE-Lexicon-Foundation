@@ -24,10 +24,12 @@
 // inside AZ. Guard the full includes so MOC only sees forward declarations.
 #ifndef Q_MOC_RUN
 #  include <AzCore/std/string/string.h>
+#  include <FoundationLocalisation/LexiconHintType.h>
 #  include <FoundationLocalisation/LexiconLocMode.h>
 #else
 namespace AZStd { class string; }
 namespace Heathen { enum class LexiconLocMode : unsigned char; }
+namespace FoundationLocalisation { enum class LexiconHintType : unsigned char; }
 #endif
 
 class QToolButton;
@@ -68,6 +70,12 @@ namespace FoundationLocalisation
         AZStd::string           GetText() const;
         Heathen::LexiconLocMode GetMode() const;
 
+        ///<summary>
+        /// Sets the hint type used to filter the Key Picker dialog when in Localised mode.
+        /// Called once by the owning property handler after CreateGUI().
+        ///</summary>
+        void SetHintFilter(FoundationLocalisation::LexiconHintType hint);
+
     signals:
         ///<summary>Fired whenever the user changes mode or edits the value field.</summary>
         void ValueChangedByUser();
@@ -86,7 +94,8 @@ namespace FoundationLocalisation
         QLineEdit*   m_valueEdit  = nullptr;
         QPushButton* m_pickButton = nullptr;
 
-        Heathen::LexiconLocMode m_mode = Heathen::LexiconLocMode::Literal;
+        Heathen::LexiconLocMode              m_mode       = Heathen::LexiconLocMode::Literal;
+        FoundationLocalisation::LexiconHintType m_hintFilter = FoundationLocalisation::LexiconHintType::None;
     };
 
 } // namespace FoundationLocalisation

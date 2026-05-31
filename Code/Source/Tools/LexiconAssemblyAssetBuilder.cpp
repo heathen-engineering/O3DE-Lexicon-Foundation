@@ -18,6 +18,7 @@
 #include "LexiconAssemblyAssetBuilder.h"
 
 #include <FoundationLocalisation/LexiconAssemblyAsset.h>
+#include <FoundationLocalisation/LexiconHintType.h>
 
 #include <AzCore/IO/FileIO.h>
 #include <AzCore/IO/Path/Path.h>
@@ -42,7 +43,7 @@ namespace FoundationLocalisation
         AssetBuilderSDK::AssetBuilderDesc desc;
         desc.m_name       = BuilderName;
         desc.m_busId      = azrtti_typeid<LexiconAssemblyAssetBuilder>();
-        desc.m_version    = 1;
+        desc.m_version    = 2;
         desc.m_builderType = AssetBuilderSDK::AssetBuilderDesc::AssetBuilderType::External;
 
         desc.m_patterns.emplace_back(
@@ -219,7 +220,7 @@ namespace FoundationLocalisation
                     && it->value.HasMember("uuid")
                     && it->value["uuid"].IsString())
                 {
-                    // ---- Asset ID entry ----
+                    // ---- Asset ID entry  { "uuid": "...", "hint": "sound|texture|spawnable|asset" } ----
                     const AZStd::string uuidStr(
                         it->value["uuid"].GetString(),
                         it->value["uuid"].GetStringLength());
@@ -234,9 +235,22 @@ namespace FoundationLocalisation
                         continue;
                     }
 
+                    // Map "hint" field to the 3-bit subtype flag
+                    AZ::u32 typeFlag = Heathen::LexiconAssemblyAsset::Entry::TypeAsset;
+                    if (it->value.HasMember("hint") && it->value["hint"].IsString())
+                    {
+                        const AZStd::string hint(
+                            it->value["hint"].GetString(),
+                            it->value["hint"].GetStringLength());
+
+                        if      (hint == "sound")     typeFlag = Heathen::LexiconAssemblyAsset::Entry::TypeSound;
+                        else if (hint == "texture")   typeFlag = Heathen::LexiconAssemblyAsset::Entry::TypeTexture;
+                        else if (hint == "spawnable") typeFlag = Heathen::LexiconAssemblyAsset::Entry::TypeSpawnable;
+                        // "asset" and unrecognised values fall through to TypeAsset
+                    }
+
                     constexpr AZ::u32 uuidSize = static_cast<AZ::u32>(sizeof(AZ::Uuid));
-                    entry.m_dataSize =
-                        Heathen::LexiconAssemblyAsset::Entry::TypeFlagAsset | uuidSize;
+                    entry.m_dataSize = typeFlag | uuidSize;
 
                     const AZ::u8* uuidBytes = reinterpret_cast<const AZ::u8*>(&uuid);
                     asset.m_bufferBlob.insert(
@@ -248,6 +262,24 @@ namespace FoundationLocalisation
                             AZ::Data::AssetId(uuid, 0),
                             AZ::Data::ProductDependencyInfo::CreateFlags(
                                 AZ::Data::AssetLoadBehavior::NoLoad)));
+                }
+                else if (it->value.IsObject()
+                    && it->value.HasMember("value")
+                    && it->value["value"].IsString())
+                {
+                    // ---- String entry with hint object  { "value": "...", "hint": "string" } ----
+                    // "hint" is editor-only metadata; read and discard it here.
+                    const char*   str  = it->value["value"].GetString();
+                    const AZ::u32 len  = static_cast<AZ::u32>(it->value["value"].GetStringLength());
+                    const AZ::u32 size = len + 1; // include null terminator
+
+                    entry.m_dataSize = Heathen::LexiconAssemblyAsset::Entry::TypeFlagString | size;
+
+                    asset.m_bufferBlob.insert(
+                        asset.m_bufferBlob.end(),
+                        reinterpret_cast<const AZ::u8*>(str),
+                        reinterpret_cast<const AZ::u8*>(str) + len);
+                    asset.m_bufferBlob.push_back(0); // null terminator
                 }
                 else
                 {

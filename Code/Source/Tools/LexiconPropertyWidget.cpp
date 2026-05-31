@@ -113,9 +113,15 @@ namespace FoundationLocalisation
         emit ValueChangedByUser();
     }
 
+    void LexiconPropertyWidget::SetHintFilter(FoundationLocalisation::LexiconHintType hint)
+    {
+        m_hintFilter = hint;
+    }
+
     void LexiconPropertyWidget::OnPickClicked()
     {
         LexiconKeyPickerDialog dialog(this);
+        dialog.SetHintFilter(m_hintFilter);
         dialog.SetCurrentKey(AZStd::string(m_valueEdit->text().toUtf8().constData()));
 
         if (dialog.exec() == QDialog::Accepted)

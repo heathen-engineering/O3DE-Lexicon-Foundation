@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <FoundationLocalisation/LexiconHintType.h>
 #include <QMap>
 #include <QString>
 
@@ -28,9 +29,10 @@ namespace FoundationLocalisation
     ///</summary>
     struct LexiconEntry
     {
-        QString sourceValue;        ///< Value from the source (reference) .helex; empty if key absent
-        QString activeValue;        ///< Value from the active (editable) .helex; empty if key absent
-        bool    isAsset  = false;   ///< True when the value is a UUID asset reference, not a string
+        QString         sourceValue;                        ///< Value from the reference .helex (legacy; unused in new UI)
+        QString         activeValue;                        ///< Value in the default .helex file
+        bool            isAsset    = false;                 ///< True when the value is a UUID asset reference
+        LexiconHintType hintType   = LexiconHintType::None; ///< Content type hint (String/Sound/Texture/Spawnable/Asset)
 
         // Validation flags — populated by LexiconValidator (Phase 6.6)
         bool    isMissing   = false; ///< Key present in source but absent in active

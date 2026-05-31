@@ -1,6 +1,6 @@
 {
     "gem_name": "FoundationLocalisation",
-    "version": "1.0.0",
+    "version": "1.1.1",
     "display_name": "Lexicon Localisation Foundation",
     "license": "Apache 2.0",
     "license_url": "",
@@ -21,7 +21,8 @@
     "requirements": "",
     "documentation_url": "",
     "dependencies": [
-        "xxHash"
+        "xxHash",
+        "EditorExtensions"
     ],
     "repo_uri": "https://github.com/heathen-engineering/O3DE-Foundaiton-for-Localisation",
     "compatible_engines": [

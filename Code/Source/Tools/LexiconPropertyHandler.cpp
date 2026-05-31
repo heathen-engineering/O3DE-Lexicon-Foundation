@@ -26,9 +26,10 @@ namespace FoundationLocalisation
     // All three handlers produce the same widget type; only the signal connection
     // differs (it always points back to the same widget for RequestWrite).
 
-    static LexiconPropertyWidget* MakeWidget(QWidget* parent)
+    static LexiconPropertyWidget* MakeWidget(QWidget* parent, LexiconHintType hint)
     {
         auto* widget = new LexiconPropertyWidget(parent);
+        widget->SetHintFilter(hint);
         QObject::connect(widget, &LexiconPropertyWidget::ValueChangedByUser,
             widget,
             [widget]()
@@ -45,7 +46,7 @@ namespace FoundationLocalisation
 
     QWidget* LexiconTextPropertyHandler::CreateGUI(QWidget* parent)
     {
-        return MakeWidget(parent);
+        return MakeWidget(parent, LexiconHintType::String);
     }
 
     void LexiconTextPropertyHandler::WriteGUIValuesIntoProperty(
@@ -74,7 +75,7 @@ namespace FoundationLocalisation
 
     QWidget* LexiconSoundPropertyHandler::CreateGUI(QWidget* parent)
     {
-        return MakeWidget(parent);
+        return MakeWidget(parent, LexiconHintType::Sound);
     }
 
     void LexiconSoundPropertyHandler::WriteGUIValuesIntoProperty(
@@ -123,7 +124,7 @@ namespace FoundationLocalisation
 
     QWidget* LexiconAssetPropertyHandler::CreateGUI(QWidget* parent)
     {
-        return MakeWidget(parent);
+        return MakeWidget(parent, LexiconHintType::Asset);
     }
 
     void LexiconAssetPropertyHandler::WriteGUIValuesIntoProperty(
