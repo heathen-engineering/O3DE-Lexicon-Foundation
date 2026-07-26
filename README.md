@@ -1,3 +1,5 @@
+> **Moved to Codeberg:** this repo now lives at [codeberg.org/Heathen-Engineering/O3DE-Lexicon-Foundation](https://codeberg.org/Heathen-Engineering/O3DE-Lexicon-Foundation) — please use that copy going forward. This GitHub copy will remain live for now while Heathen's Pro Toolkits finish migrating to our private Git server; once that's complete, this GitHub repo will be archived.
+
 # Lexicon Localisation Gem
 ![License](https://img.shields.io/badge/License-Apache_2.0-blue?style=flat-square)
 ![Maintained](https://img.shields.io/badge/Maintained%3F-yes-green?style=flat-square)
